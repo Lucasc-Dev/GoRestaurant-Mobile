@@ -74,6 +74,18 @@ const FoodDetails: React.FC = () => {
   useEffect(() => {
     async function loadFood(): Promise<void> {
       // Load a specific food with extras based on routeParams id
+      const response = await api.get<Food>(`/foods/${routeParams.id}`);
+
+      setFood(response.data);
+      
+      const extras = response.data.extras.map(extra => ({
+        id: extra.id,
+        name: extra.name,
+        quantity: 0,
+        value: extra.value,
+      }));
+
+      setExtras(extras);
     }
 
     loadFood();
@@ -81,30 +93,64 @@ const FoodDetails: React.FC = () => {
 
   function handleIncrementExtra(id: number): void {
     // Increment extra quantity
-  }
+    setExtras(
+      extras.map(extra => {
+        if (extra.id === id) {
+          extra.quantity += 1;
+        }
+        return extra;
+      })
+    );
 
+    setFood(food => ({...food, extras}));
+  }
+  
   function handleDecrementExtra(id: number): void {
     // Decrement extra quantity
-  }
+    setExtras(
+      extras.map(extra => {
+        if (extra.id === id && extra.quantity > 0) {
+          extra.quantity -= 1;
+        }
+        return extra;
+      })
+    );
 
+    setFood(food => ({...food, extras}));
+  }
+  
   function handleIncrementFood(): void {
     // Increment food quantity
+    setFoodQuantity(state => state + 1);
   }
-
+  
   function handleDecrementFood(): void {
     // Decrement food quantity
+    setFoodQuantity(state => state > 1 ? state - 1 : 1);
   }
 
   const toggleFavorite = useCallback(() => {
-    // Toggle if food is favorite or not
+    // Toggle if food is favozrite or not
+    setIsFavorite(state => !state);
   }, [isFavorite, food]);
 
   const cartTotal = useMemo(() => {
     // Calculate cartTotal
+    let value = extras.reduce((previousValue, element) => 
+      previousValue + element.value * element.quantity,
+      0
+    );
+
+    value += foodQuantity * food.price;
+
+    return formatValue(value);
   }, [extras, food, foodQuantity]);
 
   async function handleFinishOrder(): Promise<void> {
     // Finish the order and save on the API
+    await api.post('/orders', food);
+
+    navigation.goBack();
   }
 
   // Calculate the correct icon name
